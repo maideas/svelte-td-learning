@@ -9,16 +9,6 @@
 
   const numA = 4; // number of possible actions (= number of directions)
 
-  /*
-  let blocked = Array([0, 0], [3, 2], [4, 1], [3, 3]);
-  let terminal = Array([1, 1]);
-  let rewards = Array([1, 1, 1]); // [x, y, reward]
-  let defaultReward = -0.1;
-
-  let numX = 6;
-  let numY = 4;
-*/
-
   //====================================================
 
   export let blocked = Array();
@@ -34,13 +24,17 @@
 
   //====================================================
 
-  let timer;
   let mazeComp;
   let plotComp;
-  let episode = 0;
-  let stepsPerEpisode = [];
-  let rewardPerEpisode = [];
+  let stepsPerEpisode = Array();
+  let rewardPerEpisode = Array();
+  let rewardSum = 0;
   let algorithm;
+
+  let episodeTimer;
+  let episode = 0;
+  let stepTimer;
+  let steps = 0;
 
   //====================================================
 
@@ -65,39 +59,43 @@
     mazeComp.setQValue(x, y, a, q);
   };
 
-  const runQLearningEpisode = () => {
-    let x, y;
+  const runQLearningEpisodeStep = (x, y) => {
     let xNext, yNext;
     let a, r;
-    let max_steps = 100000;
-    let steps = 0;
-    let rewardSum = 0;
+
+    // run episode until terminal state has been reached
+    if (mazeComp.isTerminal(x, y)) {
+      stepsPerEpisode.push(steps);
+      rewardPerEpisode.push(rewardSum);
+      plotComp.updatePlot();
+      runEpisode();
+    } else {
+      stepTimer = setTimeout(() => {
+        a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
+        [xNext, yNext, r] = mazeComp.step(x, y, a);
+        QLearningQTableUpdate(x, y, a, r, xNext, yNext);
+        x = Number(xNext);
+        y = Number(yNext);
+
+        rewardSum += r;
+        steps++;
+        runQLearningEpisodeStep(x, y);
+      }, 0);
+    }
+  };
+
+  const runQLearningEpisode = () => {
+    let x, y;
+
+    rewardSum = 0;
+    steps = 0;
 
     if (startState) {
       [x, y] = startState;
     } else {
       [x, y] = mazeComp.getRandomStartState();
     }
-
-    // run episode until terminal state has been reached
-    while (!mazeComp.isTerminal(x, y)) {
-      a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
-      [xNext, yNext, r] = mazeComp.step(x, y, a);
-      QLearningQTableUpdate(x, y, a, r, xNext, yNext);
-      x = Number(xNext);
-      y = Number(yNext);
-      rewardSum += r;
-
-      steps++;
-      if (steps >= max_steps) {
-        console.log("WARNING: Maximum number of steps per episode reached.");
-        stepsPerEpisode.push(steps);
-        rewardPerEpisode.push(rewardSum);
-        return;
-      }
-    }
-    stepsPerEpisode.push(steps);
-    rewardPerEpisode.push(rewardSum);
+    runQLearningEpisodeStep(x, y);
   };
 
   //====================================================
@@ -116,13 +114,37 @@
     mazeComp.setQValue(x, y, a, q);
   };
 
+  const runSarsaEpisodeStep = (x, y, a) => {
+    let xNext, yNext, aNext;
+    let r;
+
+    // run episode until terminal state has been reached
+    if (mazeComp.isTerminal(x, y)) {
+      stepsPerEpisode.push(steps);
+      rewardPerEpisode.push(rewardSum);
+      plotComp.updatePlot();
+      runEpisode();
+    } else {
+      stepTimer = setTimeout(() => {
+        [xNext, yNext, r] = mazeComp.step(x, y, a);
+        aNext = mazeComp.getEpsilonGreedyAction(xNext, yNext, epsilon);
+        SarsaQTableUpdate(x, y, a, r, xNext, yNext, aNext);
+        x = Number(xNext);
+        y = Number(yNext);
+        a = Number(aNext);
+
+        rewardSum += r;
+        steps++;
+        runSarsaEpisodeStep(x, y, a);
+      }, 0);
+    }
+  };
+
   const runSarsaEpisode = () => {
-    let x, y;
-    let xNext, yNext;
-    let a, aNext, r;
-    let max_steps = 100000;
-    let steps = 0;
-    let rewardSum = 0;
+    let x, y, a;
+
+    rewardSum = 0;
+    steps = 0;
 
     if (startState) {
       [x, y] = startState;
@@ -130,27 +152,7 @@
       [x, y] = mazeComp.getRandomStartState();
     }
     a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
-
-    // run episode until terminal state has been reached
-    while (!mazeComp.isTerminal(x, y)) {
-      [xNext, yNext, r] = mazeComp.step(x, y, a);
-      aNext = mazeComp.getEpsilonGreedyAction(xNext, yNext, epsilon);
-      SarsaQTableUpdate(x, y, a, r, xNext, yNext, aNext);
-      x = Number(xNext);
-      y = Number(yNext);
-      a = Number(aNext);
-      rewardSum += r;
-
-      steps++;
-      if (steps >= max_steps) {
-        console.log("WARNING: Maximum number of steps per episode reached.");
-        stepsPerEpisode.push(steps);
-        rewardPerEpisode.push(rewardSum);
-        return;
-      }
-    }
-    stepsPerEpisode.push(steps);
-    rewardPerEpisode.push(rewardSum);
+    runSarsaEpisodeStep(x, y, a);
   };
 
   //====================================================
@@ -186,13 +188,37 @@
     mazeComp.setQValue(x, y, a, q);
   };
 
+  const runExpectedSarsaEpisodeStep = (x, y, a) => {
+    let xNext, yNext, aNext;
+    let r;
+
+    // run episode until terminal state has been reached
+    if (mazeComp.isTerminal(x, y)) {
+      stepsPerEpisode.push(steps);
+      rewardPerEpisode.push(rewardSum);
+      plotComp.updatePlot();
+      runEpisode();
+    } else {
+      stepTimer = setTimeout(() => {
+        [xNext, yNext, r] = mazeComp.step(x, y, a);
+        aNext = mazeComp.getEpsilonGreedyAction(xNext, yNext, epsilon);
+        ExpectedSarsaQTableUpdate(x, y, a, r, xNext, yNext, aNext);
+        x = Number(xNext);
+        y = Number(yNext);
+        a = Number(aNext);
+
+        rewardSum += r;
+        steps++;
+        runExpectedSarsaEpisodeStep(x, y, a);
+      }, 0);
+    }
+  };
+
   const runExpectedSarsaEpisode = () => {
-    let x, y;
-    let xNext, yNext;
-    let a, aNext, r;
-    let max_steps = 100000;
-    let steps = 0;
-    let rewardSum = 0;
+    let x, y, a;
+
+    rewardSum = 0;
+    steps = 0;
 
     if (startState) {
       [x, y] = startState;
@@ -200,27 +226,7 @@
       [x, y] = mazeComp.getRandomStartState();
     }
     a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
-
-    // run episode until terminal state has been reached
-    while (!mazeComp.isTerminal(x, y)) {
-      [xNext, yNext, r] = mazeComp.step(x, y, a);
-      aNext = mazeComp.getEpsilonGreedyAction(xNext, yNext, epsilon);
-      ExpectedSarsaQTableUpdate(x, y, a, r, xNext, yNext, aNext);
-      x = Number(xNext);
-      y = Number(yNext);
-      a = Number(aNext);
-      rewardSum += r;
-
-      steps++;
-      if (steps >= max_steps) {
-        console.log("WARNING: Maximum number of steps per episode reached.");
-        stepsPerEpisode.push(steps);
-        rewardPerEpisode.push(rewardSum);
-        return;
-      }
-    }
-    stepsPerEpisode.push(steps);
-    rewardPerEpisode.push(rewardSum);
+    runExpectedSarsaEpisodeStep(x, y, a);
   };
 
   //====================================================
@@ -255,49 +261,53 @@
     return seenStateActions[i];
   };
 
-  const runDynaQEpisode = () => {
-    let x, y;
+  const runDynaQEpisodeStep = (x, y) => {
     let xNext, yNext;
     let a, r;
-    let max_steps = 100000;
-    let steps = 0;
-    let rewardSum = 0;
+
+    // run episode until terminal state has been reached
+    if (mazeComp.isTerminal(x, y)) {
+      stepsPerEpisode.push(steps);
+      rewardPerEpisode.push(rewardSum);
+      plotComp.updatePlot();
+      runEpisode();
+    } else {
+      stepTimer = setTimeout(() => {
+        a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
+        [xNext, yNext, r] = mazeComp.step(x, y, a);
+        QLearningQTableUpdate(x, y, a, r, xNext, yNext);
+        DynaQModelUpdate(x, y, a, r, xNext, yNext);
+        x = Number(xNext);
+        y = Number(yNext);
+
+        // planning steps (model based Q table update steps)
+        for (let n = 0; n < planningSteps; n++) {
+          let mx, my, ma, mr;
+          let mxNext, myNext;
+          [mx, my, ma] = DynaQGetModelStateAction();
+          [mxNext, myNext, mr] = envModel[mx][my][ma];
+          QLearningQTableUpdate(mx, my, ma, mr, mxNext, myNext);
+        }
+
+        rewardSum += r;
+        steps++;
+        runDynaQEpisodeStep(x, y);
+      }, 0);
+    }
+  };
+
+  const runDynaQEpisode = () => {
+    let x, y, a;
+
+    rewardSum = 0;
+    steps = 0;
 
     if (startState) {
       [x, y] = startState;
     } else {
       [x, y] = mazeComp.getRandomStartState();
     }
-
-    // run episode until terminal state has been reached
-    while (!mazeComp.isTerminal(x, y)) {
-      a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
-      [xNext, yNext, r] = mazeComp.step(x, y, a);
-      QLearningQTableUpdate(x, y, a, r, xNext, yNext);
-      DynaQModelUpdate(x, y, a, r, xNext, yNext);
-      x = Number(xNext);
-      y = Number(yNext);
-      rewardSum += r;
-
-      // planning steps (model based Q table update steps)
-      for (let n = 0; n < planningSteps; n++) {
-        let mx, my, ma, mr;
-        let mxNext, myNext;
-        [mx, my, ma] = DynaQGetModelStateAction();
-        [mxNext, myNext, mr] = envModel[mx][my][ma];
-        QLearningQTableUpdate(mx, my, ma, mr, mxNext, myNext);
-      }
-
-      steps++;
-      if (steps >= max_steps) {
-        console.log("WARNING: Maximum number of steps per episode reached.");
-        stepsPerEpisode.push(steps);
-        rewardPerEpisode.push(rewardSum);
-        return;
-      }
-    }
-    stepsPerEpisode.push(steps);
-    rewardPerEpisode.push(rewardSum);
+    runDynaQEpisodeStep(x, y);
   };
 
   //====================================================
@@ -338,82 +348,82 @@
     }
   };
 
-  const runMonteCarloEpisode = () => {
-    let x, y;
+  const runMonteCarloEpisodeStep = (x, y) => {
     let xNext, yNext;
     let a, r;
-    let max_steps = 100000;
-    let steps = 0;
-    let rewardSum = 0;
-
-    [x, y] = mazeComp.getRandomStartState();
-    trajectory = Array();
 
     // run episode until terminal state has been reached
-    while (!mazeComp.isTerminal(x, y)) {
-      a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
-      [xNext, yNext, r] = mazeComp.step(x, y, a);
-      trajectory.push([x, y, a, r]);
-      x = Number(xNext);
-      y = Number(yNext);
-      rewardSum += r;
+    if (mazeComp.isTerminal(x, y)) {
+      MonteCarloQTableUpdate();
+      stepsPerEpisode.push(steps);
+      rewardPerEpisode.push(rewardSum);
+      plotComp.updatePlot();
+      runEpisode();
+    } else {
+      stepTimer = setTimeout(() => {
+        a = mazeComp.getEpsilonGreedyAction(x, y, epsilon);
+        [xNext, yNext, r] = mazeComp.step(x, y, a);
+        trajectory.push([x, y, a, r]);
+        x = Number(xNext);
+        y = Number(yNext);
 
-      steps++;
-      if (steps >= max_steps) {
-        console.log("WARNING: Maximum number of steps per episode reached.");
-        stepsPerEpisode.push(steps);
-        rewardPerEpisode.push(rewardSum);
-        return;
-      }
+        rewardSum += r;
+        steps++;
+        runMonteCarloEpisodeStep(x, y);
+      }, 0);
     }
-    MonteCarloQTableUpdate();
-    stepsPerEpisode.push(steps);
-    rewardPerEpisode.push(rewardSum);
+  };
+
+  const runMonteCarloEpisode = () => {
+    let x, y;
+
+    rewardSum = 0;
+    steps = 0;
+    trajectory = Array();
+
+    [x, y] = mazeComp.getRandomStartState();
+    runMonteCarloEpisodeStep(x, y);
   };
 
   //====================================================
 
   const runEpisode = () => {
-    if (algorithm == "Q-Learning") {
-      runQLearningEpisode();
-    }
-    if (algorithm == "SARSA") {
-      runSarsaEpisode();
-    }
-    if (algorithm == "Expected SARSA") {
-      runExpectedSarsaEpisode();
-    }
-    if (algorithm == "Dyna-Q") {
-      runDynaQEpisode();
-    }
-    if (algorithm == "Monte Carlo") {
-      runMonteCarloEpisode();
-    }
-    plotComp.updatePlot();
-  };
-
-  //====================================================
-
-  const run = () => {
-    timer = setTimeout(() => {
+    episodeTimer = setTimeout(() => {
       if (episode < numEpisodes) {
         episode++;
-        runEpisode();
-        run();
+
+        if (algorithm == "Q-Learning") {
+          runQLearningEpisode();
+        }
+        if (algorithm == "SARSA") {
+          runSarsaEpisode();
+        }
+        if (algorithm == "Expected SARSA") {
+          runExpectedSarsaEpisode();
+        }
+        if (algorithm == "Dyna-Q") {
+          runDynaQEpisode();
+        }
+        if (algorithm == "Monte Carlo") {
+          runMonteCarloEpisode();
+        }
       }
-    }, 100);
+    }, 0);
   };
 
   const halt = () => {
-    if (timer) {
-      clearTimeout(timer);
+    if (episodeTimer) {
+      clearTimeout(episodeTimer);
+    }
+    if (stepTimer) {
+      clearTimeout(stepTimer);
     }
   };
 
   const init = () => {
     episode = 0;
-    stepsPerEpisode = [];
-    rewardPerEpisode = [];
+    stepsPerEpisode = Array();
+    rewardPerEpisode = Array();
     mazeComp.initQValues();
     plotComp.clearPlot();
   };
@@ -451,7 +461,6 @@
       bind:data={stepsPerEpisode}
       bind:dataSecond={rewardPerEpisode}
       yTitle={'steps per episode'}
-      yIsLog={true}
       ySecondTitle={'reward per episode'}
       hasSecondY={true} />
   </div>
@@ -467,17 +476,17 @@
     </select>
     <button on:click={init}>init</button>
     <button on:click={halt}>halt</button>
-    <button on:click={run}>run</button>
+    <button on:click={runEpisode}>run</button>
   </div>
 
   <div class="narrow-box">
     <Maze
-      bind:numX
-      bind:numY
-      bind:blocked
-      bind:terminal
-      bind:rewards
-      bind:defaultReward
+      {numX}
+      {numY}
+      {blocked}
+      {terminal}
+      {rewards}
+      {defaultReward}
       bind:this={mazeComp} />
   </div>
 </div>

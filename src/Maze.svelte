@@ -4,9 +4,9 @@
 
   export let numX;
   export let numY;
-  export let blocked = [];
-  export let terminal = [];
-  export let rewards = [];
+  export let blocked = Array();
+  export let terminal = Array();
+  export let rewards = Array();
   export let defaultReward = 0;
 
   const MazeDirEnum = Object.freeze({

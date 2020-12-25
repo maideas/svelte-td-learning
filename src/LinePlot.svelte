@@ -4,12 +4,12 @@
   export let title = "";
   export let xIsLog = false;
 
-  export let data = [];
+  export let data = Array();
   export let yIsLog = false;
   export let yTitle = "";
 
   export let hasSecondY = false;
-  export let dataSecond = [];
+  export let dataSecond = Array();
   export let ySecondIsLog = false;
   export let ySecondTitle = "";
 
@@ -82,8 +82,8 @@
   };
 
   export const clearPlot = () => {
-    data = [];
-    dataSecond = [];
+    data = Array();
+    dataSecond = Array();
     updatePlot();
   };
 
