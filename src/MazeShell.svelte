@@ -1,13 +1,12 @@
 <script>
   import { onMount } from "svelte";
   import Maze from "./Maze.svelte";
+  import { numA } from "./MazeTile.svelte";
   import LinePlot from "./LinePlot.svelte";
 
   const epsilon = 0.1; // exploration probability
   const alpha = 0.2; // learning rate
   const gamma = 0.9; // future reward discount factor
-
-  const numA = 4; // number of possible actions (= number of directions)
 
   //====================================================
 
@@ -35,13 +34,6 @@
   let episode = 0;
   let stepTimer;
   let steps = 0;
-
-  //====================================================
-
-  const getRandomInt = n => {
-    // result range [0 .. n-1]
-    return Math.floor(Math.random() * Math.floor(n));
-  };
 
   //====================================================
   // Q-Learning algorithm
@@ -257,7 +249,7 @@
   };
 
   const DynaQGetModelStateAction = () => {
-    let i = getRandomInt(seenStateActions.length);
+    let i = mazeComp.getRandomInt(seenStateActions.length);
     return seenStateActions[i];
   };
 

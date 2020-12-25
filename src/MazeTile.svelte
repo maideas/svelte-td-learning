@@ -1,14 +1,19 @@
-<script>
-  import { onMount } from "svelte";
-  import Icon from "fa-svelte";
-  import { faArrowAltCircleUp } from "@fortawesome/free-regular-svg-icons";
-
-  const MazeDirEnum = Object.freeze({
+<script context="module">
+  export const MazeDirEnum = Object.freeze({
     up: 0,
     right: 1,
     down: 2,
     left: 3
   });
+
+  // number of possible actions (= number of directions)
+  export const numA = 4;
+</script>
+
+<script>
+  import { onMount } from "svelte";
+  import Icon from "fa-svelte";
+  import { faArrowAltCircleUp } from "@fortawesome/free-regular-svg-icons";
 
   let blocked = false;
   let terminal = false;

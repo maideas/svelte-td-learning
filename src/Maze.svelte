@@ -1,6 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import MazeTile from "./MazeTile.svelte";
+  import { MazeDirEnum, numA } from "./MazeTile.svelte";
 
   export let numX;
   export let numY;
@@ -8,15 +9,6 @@
   export let terminal = Array();
   export let rewards = Array();
   export let defaultReward = 0;
-
-  const MazeDirEnum = Object.freeze({
-    up: 0,
-    right: 1,
-    down: 2,
-    left: 3
-  });
-
-  const numA = 4; // number of possible actions (= number of directions)
 
   let mazeTileComps = Array.from({ length: numX }, () =>
     Array.from({ length: numY }, () => null)
@@ -43,7 +35,7 @@
 
   //====================================================
 
-  const getRandomInt = n => {
+  export const getRandomInt = n => {
     // result range [0 .. n-1]
     return Math.floor(Math.random() * Math.floor(n));
   };
