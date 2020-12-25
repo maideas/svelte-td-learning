@@ -28,7 +28,7 @@
   let stepsPerEpisode = Array();
   let rewardPerEpisode = Array();
   let rewardSum = 0;
-  let algorithm;
+  let selectedAlgorithm;
 
   let episodeTimer;
   let episode = 0;
@@ -379,26 +379,23 @@
 
   //====================================================
 
+  const algorithms = [
+    { name: "Q-Learning", func: runQLearningEpisode },
+    { name: "SARSA", func: runSarsaEpisode },
+    { name: "Expected SARSA", func: runExpectedSarsaEpisode },
+    { name: "Dyna-Q", func: runDynaQEpisode },
+    { name: "Monte Carlo", func: runMonteCarloEpisode }
+  ];
+
   const runEpisode = () => {
     episodeTimer = setTimeout(() => {
       if (episode < numEpisodes) {
         episode++;
-
-        if (algorithm == "Q-Learning") {
-          runQLearningEpisode();
-        }
-        if (algorithm == "SARSA") {
-          runSarsaEpisode();
-        }
-        if (algorithm == "Expected SARSA") {
-          runExpectedSarsaEpisode();
-        }
-        if (algorithm == "Dyna-Q") {
-          runDynaQEpisode();
-        }
-        if (algorithm == "Monte Carlo") {
-          runMonteCarloEpisode();
-        }
+        algorithms.forEach(algo => {
+          if (selectedAlgorithm == algo.name) {
+            algo.func();
+          }
+        });
       }
     }, 0);
   };
@@ -459,12 +456,10 @@
 
   <div class="box">EPISODE : {episode}</div>
   <div class="box">
-    <select bind:value={algorithm} on:change={init}>
-      <option value="Q-Learning">Q-Learning</option>
-      <option value="SARSA">SARSA</option>
-      <option value="Expected SARSA">Expected SARSA</option>
-      <option value="Dyna-Q">Dyna-Q</option>
-      <option value="Monte Carlo">Monte Carlo</option>
+    <select bind:value={selectedAlgorithm} on:change={init}>
+      {#each algorithms as algo}
+        <option value={algo.name}>{algo.name}</option>
+      {/each}
     </select>
     <button on:click={init}>init</button>
     <button on:click={halt}>halt</button>
