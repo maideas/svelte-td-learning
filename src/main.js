@@ -1,15 +1,15 @@
 import MazeShell from './MazeShell.svelte';
 
+const comp0Element = document.getElementById("maze-shell-0");
 const comp1Element = document.getElementById("maze-shell-1");
 const comp2Element = document.getElementById("maze-shell-2");
 const comp3Element = document.getElementById("maze-shell-3");
 
-export const comp1 = comp1Element ? new MazeShell({
-	target: comp1Element,
+export const comp0 = comp0Element ? new MazeShell({
+	target: comp0Element,
 	props: {
 		numX: 12,
 		numY: 3,
-		numEpisodes: 500,
 		planningSteps: 10,  // Dyna-Q parameter
 
 		blocked: Array(),
@@ -26,6 +26,27 @@ export const comp1 = comp1Element ? new MazeShell({
 			[7, 2, -10.0], [8, 2, -10.0], [9, 2, -10.0],
 			[10, 2, -10.0],
 			[11, 2, 0.0]
+		),
+		defaultReward: -0.1,
+		startState: [0, 2]
+	}
+}) : null;
+
+export const comp1 = comp1Element ? new MazeShell({
+	target: comp1Element,
+	props: {
+		numX: 7,
+		numY: 3,
+		planningSteps: 10,  // Dyna-Q parameter
+
+		blocked: Array(),
+		terminal: Array(
+			[1, 2], [2, 2], [3, 2], [4, 2], [5, 2],
+			[6, 2]
+		),
+		rewards: Array(
+			[1, 2, -10.0], [2, 2, -10.0], [3, 2, -10.0], [4, 2, -10.0], [5, 2, -10.0],
+			[6, 2, 0.0]
 		),
 		defaultReward: -0.1,
 		startState: [0, 2]
