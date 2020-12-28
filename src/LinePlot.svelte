@@ -26,7 +26,7 @@
       yaxis: {
         title: yTitle,
         type: yIsLog ? "log" : "linear",
-        titlefont:  { color: "#08C" },
+        titlefont: { color: "#08C" },
         tickfont: { color: "#08C" },
         autorange: true
       },
@@ -57,7 +57,7 @@
         type: ySecondIsLog ? "log" : "linear",
         overlaying: "y",
         side: "right",
-        titlefont:  { color: "#E60" },
+        titlefont: { color: "#E60" },
         tickfont: { color: "#E60" },
         autorange: true
       };
@@ -94,6 +94,11 @@
 
 <style>
   div.plot {
+    /* PlotlyJS requires content-box */
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+
     border: 1px solid #eee;
     width: 100%;
   }

@@ -420,6 +420,10 @@
 
 <style>
   div.container {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+
     margin: 20px auto;
     padding: 10px;
     border: 3px solid #eee;
@@ -439,11 +443,11 @@
     margin: 0px;
   }
   button {
-    margin: 0px 20px;
+    margin: 0px 10px;
   }
 </style>
 
-<div class="container" style="width: {numX * 100 + (numX - 1) * 4}px;">
+<div class="container" style="width: {26 + numX * 100 + (numX - 1) * 4}px;">
   <div class="narrow-box">
     <LinePlot
       bind:this={plotComp}
