@@ -10,7 +10,7 @@
 
   //====================================================
 
-  export let blocked = Array();
+  export let blocked = [];
   export let terminal = Array([0, 0]);
   export let rewards = Array([0, 0, 1.0]); // [x, y, reward]
   export let defaultReward = 0;
@@ -25,8 +25,8 @@
 
   let mazeComp;
   let plotComp;
-  let stepsPerEpisode = Array();
-  let rewardPerEpisode = Array();
+  let stepsPerEpisode = [];
+  let rewardPerEpisode = [];
   let rewardSum = 0;
   let selectedAlgorithm;
 
@@ -228,7 +228,7 @@
   let envModel = Array.from({ length: numX }, () =>
     Array.from({ length: numY }, () => Array.from({ length: numA }, () => null))
   );
-  let seenStateActions = Array();
+  let seenStateActions = [];
 
   const DynaQModelUpdate = (x, y, a, r, xNext, yNext) => {
     let seen = false;
@@ -371,7 +371,7 @@
 
     rewardSum = 0;
     steps = 0;
-    trajectory = Array();
+    trajectory = [];
 
     [x, y] = mazeComp.getRandomStartState();
     runMonteCarloEpisodeStep(x, y);
@@ -411,8 +411,8 @@
 
   const init = () => {
     episode = 0;
-    stepsPerEpisode = Array();
-    rewardPerEpisode = Array();
+    stepsPerEpisode = [];
+    rewardPerEpisode = [];
     mazeComp.initQValues();
     plotComp.clearPlot();
   };

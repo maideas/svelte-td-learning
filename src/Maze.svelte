@@ -5,9 +5,9 @@
 
   export let numX;
   export let numY;
-  export let blocked = Array();
-  export let terminal = Array();
-  export let rewards = Array();
+  export let blocked = [];
+  export let terminal = [];
+  export let rewards = [];
   export let defaultReward = 0;
 
   let mazeTileComps = Array.from({ length: numX }, () =>
