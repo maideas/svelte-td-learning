@@ -15,7 +15,7 @@
   export let rewards = Array([0, 0, 1.0]); // [x, y, reward]
   export let defaultReward = 0;
   export let startState = undefined;
-  export let numEpisodes = 500;
+  export let numEpisodes = 1000;
   export let planningSteps = 10; // Dyna-Q parameter
 
   export let numX = 5;
@@ -425,7 +425,7 @@
     box-sizing: border-box;
 
     margin: 20px auto;
-    padding: 10px;
+    padding: 5px;
     border: 3px solid #eee;
   }
   div.box {
@@ -437,7 +437,6 @@
     margin: 0px 20px;
     color: inherit;
     background: inherit;
-    padding: 0px 8px;
   }
   div.narrow-box {
     margin: 0px;
@@ -447,15 +446,15 @@
   }
 </style>
 
-<div class="container" style="width: {26 + numX * 100 + (numX - 1) * 4}px;">
+<div class="container" style="width: {16 + numX * 100 + (numX - 1) * 4}px;">
   <div class="narrow-box">
     <LinePlot
       bind:this={plotComp}
-      bind:data={stepsPerEpisode}
-      bind:dataSecond={rewardPerEpisode}
-      yTitle={'steps per episode'}
-      ySecondTitle={'reward per episode'}
-      hasSecondY={true} />
+      bind:data={rewardPerEpisode}
+      bind:dataSecond={stepsPerEpisode}
+      yTitle={'reward per episode'}
+      ySecondTitle={'steps per episode'}
+      hasSecondY={false} />
   </div>
 
   <div class="box">EPISODE : {episode}</div>

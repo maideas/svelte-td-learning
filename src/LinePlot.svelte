@@ -99,7 +99,7 @@
     -moz-box-sizing: content-box;
     box-sizing: content-box;
 
-    border: 1px solid #eee;
+    border-bottom: 1px solid #eee;
     width: 100%;
   }
 </style>
