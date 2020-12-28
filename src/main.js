@@ -1,7 +1,11 @@
 import MazeShell from './MazeShell.svelte';
 
-export const comp = new MazeShell({
-	target: document.getElementById("maze-shell-1"),
+const comp1Element = document.getElementById("maze-shell-1");
+const comp2Element = document.getElementById("maze-shell-2");
+const comp3Element = document.getElementById("maze-shell-3");
+
+export const comp1 = comp1Element ? new MazeShell({
+	target: comp1Element,
 	props: {
 		numX: 12,
 		numY: 3,
@@ -26,10 +30,10 @@ export const comp = new MazeShell({
 		defaultReward: -0.1,
 		startState: [0, 2]
 	}
-});
+}) : null;
 
-export const comp2 = new MazeShell({
-	target: document.getElementById("maze-shell-2"),
+export const comp2 = comp2Element ? new MazeShell({
+	target: comp2Element,
 	props: {
 		numX: 5,
 		numY: 5,
@@ -38,10 +42,10 @@ export const comp2 = new MazeShell({
 		rewards: Array([1, 1, 1.0]),
 		defaultReward: -0.1
 	}
-});
+}) : null;
 
-export const comp3 = new MazeShell({
-	target: document.getElementById("maze-shell-3"),
+export const comp3 = comp3Element ? new MazeShell({
+	target: comp3Element,
 	props: {
 		numX: 6,
 		numY: 4,
@@ -50,4 +54,4 @@ export const comp3 = new MazeShell({
 		rewards: Array([1, 1, 1.0]),
 		defaultReward: -0.1
 	}
-});
+}) : null;
