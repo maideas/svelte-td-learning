@@ -4,6 +4,7 @@ const comp0Element = document.getElementById("maze-shell-0");
 const comp1Element = document.getElementById("maze-shell-1");
 const comp2Element = document.getElementById("maze-shell-2");
 const comp3Element = document.getElementById("maze-shell-3");
+const comp4Element = document.getElementById("maze-shell-4");
 
 export const comp0 = comp0Element ? new MazeShell({
 	target: comp0Element,
@@ -67,6 +68,18 @@ export const comp2 = comp2Element ? new MazeShell({
 
 export const comp3 = comp3Element ? new MazeShell({
 	target: comp3Element,
+	props: {
+		numX: 5,
+		numY: 5,
+		blocked: Array(),
+		terminal: Array([1, 1]),
+		rewards: Array([1, 1, 1.0], [3, 3, 1.0]),
+		defaultReward: -0.1
+	}
+}) : null;
+
+export const comp4 = comp4Element ? new MazeShell({
+	target: comp4Element,
 	props: {
 		numX: 6,
 		numY: 4,
