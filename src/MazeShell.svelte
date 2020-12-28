@@ -424,7 +424,7 @@
     -moz-box-sizing: border-box;
     box-sizing: border-box;
 
-    margin: 20px auto;
+    margin: 30px auto;
     padding: 5px;
     border: 3px solid #eee;
   }
