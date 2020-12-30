@@ -42,12 +42,12 @@
 
   //====================================================
 
-  export const isBlocked = (x, y) => {
-    return mazeTileComps[x][y].isBlocked();
+  export const isBlocked = state => {
+    return mazeTileComps[state[0]][state[1]].isBlocked();
   };
 
-  export const isTerminal = (x, y) => {
-    return mazeTileComps[x][y].isTerminal();
+  export const isTerminal = state => {
+    return mazeTileComps[state[0]][state[1]].isTerminal();
   };
 
   export const initQValues = () => {
@@ -59,32 +59,44 @@
     updateHeatMap();
   };
 
-  export const setQValue = (x, y, a, val) => {
-    if (x >= 0 && x < numX && y >= 0 && y < numY) {
-      mazeTileComps[x][y].setQValue(a, val);
+  export const setQValue = (state, a, val) => {
+    if (state[0] >= 0 && state[0] < numX && state[1] >= 0 && state[1] < numY) {
+      mazeTileComps[state[0]][state[1]].setQValue(a, val);
       updateHeatMap();
     } else {
-      console.log("ERROR: Invalid setQValue coordinates [", x, ":", y, "] !");
+      console.log(
+        "ERROR: Invalid setQValue coordinates [",
+        state[0],
+        ":",
+        state[1],
+        "] !"
+      );
     }
   };
 
-  export const getQValue = (x, y, a) => {
-    return mazeTileComps[x][y].getQValue(a);
+  export const getQValue = (state, a) => {
+    return mazeTileComps[state[0]][state[1]].getQValue(a);
   };
 
-  export const getMaxQValue = (x, y) => {
-    return mazeTileComps[x][y].getMaxQValue();
+  export const getMaxQValue = state => {
+    return mazeTileComps[state[0]][state[1]].getMaxQValue();
   };
 
-  export const getPolicy = (x, y) => {
-    return mazeTileComps[x][y].getPolicy();
+  export const getPolicy = state => {
+    return mazeTileComps[state[0]][state[1]].getPolicy();
   };
 
-  const getReward = (x, y) => {
-    if (x >= 0 && x < numX && y >= 0 && y < numY) {
-      return mazeTileComps[x][y].getReward();
+  const getReward = state => {
+    if (state[0] >= 0 && state[0] < numX && state[1] >= 0 && state[1] < numY) {
+      return mazeTileComps[state[0]][state[1]].getReward();
     } else {
-      console.log("ERROR: Invalid getReward coordinates [", x, ":", y, "] !");
+      console.log(
+        "ERROR: Invalid getReward coordinates [",
+        state[0],
+        ":",
+        state[1],
+        "] !"
+      );
       return 0;
     }
   };
@@ -118,44 +130,41 @@
 
   export const getRandomStartState = () => {
     while (true) {
-      let x = getRandomInt(numX);
-      let y = getRandomInt(numY);
-      if (!isTerminal(x, y) && !isBlocked(x, y)) {
-        return [x, y];
+      let state = [getRandomInt(numX), getRandomInt(numY)];
+      if (!isTerminal(state) && !isBlocked(state)) {
+        return state;
       }
     }
   };
 
-  export const getEpsilonGreedyAction = (x, y, epsilon) => {
+  export const getEpsilonGreedyAction = (state, epsilon) => {
     if (Math.random() < epsilon) {
       return getRandomInt(numA); // choose random action with epsilon probability
     } else {
-      return getPolicy(x, y); // else choose action according to current policy
+      return getPolicy(state); // else choose action according to current policy
     }
   };
 
-  export const step = (x, y, a) => {
-    let xNext = Number(x);
-    let yNext = Number(y);
+  export const step = (state, a) => {
+    let stateNext = [...state];
 
-    if (a == MazeDirEnum.down && y < numY - 1) {
-      yNext += 1;
+    if (a == MazeDirEnum.down && state[1] < numY - 1) {
+      stateNext[1] += 1;
     }
-    if (a == MazeDirEnum.right && x < numX - 1) {
-      xNext += 1;
+    if (a == MazeDirEnum.right && state[0] < numX - 1) {
+      stateNext[0] += 1;
     }
-    if (a == MazeDirEnum.up && y > 0) {
-      yNext -= 1;
+    if (a == MazeDirEnum.up && state[1] > 0) {
+      stateNext[1] -= 1;
     }
-    if (a == MazeDirEnum.left && x > 0) {
-      xNext -= 1;
+    if (a == MazeDirEnum.left && state[0] > 0) {
+      stateNext[0] -= 1;
     }
-    if (isBlocked(xNext, yNext)) {
-      xNext = Number(x);
-      yNext = Number(y);
+    if (isBlocked(stateNext)) {
+      stateNext = [...state];
     }
     // in this example environment immediate reward is only based on next state value
-    return [xNext, yNext, getReward(xNext, yNext)];
+    return [stateNext, getReward(stateNext)];
   };
 </script>
 
