@@ -16,16 +16,20 @@
   let plotDiv;
 
   export const updatePlot = () => {
+    let xmin = data.length ? data.length * -0.02 : -0.02;
+    let xmax = data.length ? data.length * 1.02 : 1.02;
+
     let layout = {
       title,
       showlegend: false,
       xaxis: {
         type: xIsLog ? "log" : "linear",
-        autorange: true
+        range: [xmin, xmax]
       },
       yaxis: {
         title: yTitle,
         type: yIsLog ? "log" : "linear",
+        range: [-1.1, 1.1],
         titlefont: { color: "#08C" },
         tickfont: { color: "#08C" },
         autorange: true
@@ -55,6 +59,7 @@
       layout.yaxis2 = {
         title: ySecondTitle,
         type: ySecondIsLog ? "log" : "linear",
+        range: [-1.1, 1.1],
         overlaying: "y",
         side: "right",
         titlefont: { color: "#E60" },
