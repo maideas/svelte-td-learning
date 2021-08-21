@@ -3,6 +3,8 @@
   import Maze from "./Maze.svelte";
   import { numA } from "./MazeTile.svelte";
   import LinePlot from "./LinePlot.svelte";
+  import Data from "./Data.svelte";
+  import QNet from "./QNet.svelte";
 
   const epsilon = 0.1; // exploration probability
   const alpha = 0.2; // learning rate
@@ -36,22 +38,106 @@
   let steps = 0;
 
   //====================================================
+
+  const maxData = 2000;
+  const batchSize = 100;
+  const trainDistance = 10;
+
+  let DataComp;
+  let QNetComp;
+  let useQNet = false;
+  let trainDistanceCount = 0;
+
+  //====================================================
+  // Q table update
+  //====================================================
+
+  const QTableUpdate = (stepData, calcQValueFunc) => {
+    let q = calcQValueFunc(stepData);
+    mazeComp.setQValue(stepData.state, stepData.a, q);
+  };
+
+  //====================================================
+  // Q network update
+  //====================================================
+
+  const QNetUpdate = (stepData, calcQValueFunc) => {
+    // add the given data item to the DataComp memory ...
+    DataComp.add(stepData);
+
+    // train Q network only every "trainDistance" steps ...
+    trainDistanceCount++;
+    if (trainDistanceCount < trainDistance) return;
+    trainDistanceCount = 0;
+
+    // get a random batch of data from the DataComp memory ...
+    let stepDataBatch = DataComp.getBatch(batchSize);
+
+    // prepare Q network input data ...
+    let normStates = [];
+    stepDataBatch.forEach(stepData => {
+      let normState = QNetComp.normalize(
+        stepData.state,
+        [0, 0],
+        [numX - 1, numY - 1]
+      );
+      normStates.push(normState);
+    });
+
+    // get current Q network output data (Q values) for the 
+    // given input data (states) ...
+    QNetComp.predict(normStates).then(QValues => {
+      stepDataBatch.forEach((stepData, i) => {
+        // update the selected actions related Q values ...
+        QValues[i][stepData.a] = calcQValueFunc(stepData);
+      });
+
+      // use the prepared X and Y data to adjust the Q network ...
+      QNetComp.fit(normStates, QValues).then(() => {
+        // update the mazeComp Q values using the adjusted Q network ...
+        for (let y = 0; y < numY; y++) {
+          for (let x = 0; x < numX; x++) {
+            let state = [x, y];
+            let normState = QNetComp.normalize(
+              state,
+              [0, 0],
+              [numX - 1, numY - 1]
+            );
+            let normStates = [normState];
+            QNetComp.predict(normStates).then(QValues => {
+              for (let a = 0; a < numA; a++) {
+                mazeComp.setQValue(state, a, QValues[0][a]);
+              }
+            });
+          }
+        }
+      });
+    });
+  };
+
+  //====================================================
   // Q-Learning algorithm
   //====================================================
 
-  const QLearningQTableUpdate = (state, a, r, stateNext) => {
+  const QLearningCalcQValue = stepData => {
     let g;
-    if (mazeComp.isTerminal(stateNext)) {
-      g = r;
+    if (mazeComp.isTerminal(stepData.stateNext)) {
+      g = stepData.r;
     } else {
       // G with respect to maximum Q value (over all actions) of next state
-      g = r + gamma * mazeComp.getMaxQValue(stateNext);
+      g = stepData.r + gamma * mazeComp.getMaxQValue(stepData.stateNext);
     }
-    let q = (1.0 - alpha) * mazeComp.getQValue(state, a) + alpha * g;
-    mazeComp.setQValue(state, a, q);
+    if (useQNet) {
+      // pure g is returned in case a DQN is used, because the network
+      // learning rate replaces the table variant alpha parameter ...
+      return g;
+    }
+    return (
+      (1.0 - alpha) * mazeComp.getQValue(stepData.state, stepData.a) + alpha * g
+    );
   };
 
-  const runQLearningEpisodeStep = (state) => {
+  const runQLearningEpisodeStep = state => {
     let stateNext;
     let a, r;
 
@@ -64,7 +150,11 @@
       stepTimer = setTimeout(() => {
         a = mazeComp.getEpsilonGreedyAction(state, epsilon);
         [stateNext, r] = mazeComp.step(state, a);
-        QLearningQTableUpdate(state, a, r, stateNext);
+        if (useQNet) {
+          QNetUpdate({ state, a, r, stateNext }, QLearningCalcQValue);
+        } else {
+          QTableUpdate({ state, a, r, stateNext }, QLearningCalcQValue);
+        }
         state = [...stateNext];
 
         rewardSum += r;
@@ -92,16 +182,24 @@
   // SARSA algorithm
   //====================================================
 
-  const SarsaQTableUpdate = (state, a, r, stateNext, aNext) => {
+  const SarsaCalcQValue = stepData => {
     let g;
-    if (mazeComp.isTerminal(stateNext)) {
-      g = r;
+    if (mazeComp.isTerminal(stepData.stateNext)) {
+      g = stepData.r;
     } else {
       // G with respect to policy related Q value of next state
-      g = r + gamma * mazeComp.getQValue(stateNext, aNext);
+      g =
+        stepData.r +
+        gamma * mazeComp.getQValue(stepData.stateNext, stepData.aNext);
     }
-    let q = (1.0 - alpha) * mazeComp.getQValue(state, a) + alpha * g;
-    mazeComp.setQValue(state, a, q);
+    if (useQNet) {
+      // pure g is returned in case a DQN is used, because the network
+      // learning rate replaces the table variant alpha parameter ...
+      return g;
+    }
+    return (
+      (1.0 - alpha) * mazeComp.getQValue(stepData.state, stepData.a) + alpha * g
+    );
   };
 
   const runSarsaEpisodeStep = (state, a) => {
@@ -118,7 +216,11 @@
       stepTimer = setTimeout(() => {
         [stateNext, r] = mazeComp.step(state, a);
         aNext = mazeComp.getEpsilonGreedyAction(stateNext, epsilon);
-        SarsaQTableUpdate(state, a, r, stateNext, aNext);
+        if (useQNet) {
+          QNetUpdate({ state, a, r, stateNext, aNext }, SarsaCalcQValue);
+        } else {
+          QTableUpdate({ state, a, r, stateNext, aNext }, SarsaCalcQValue);
+        }
         state = [...stateNext];
         a = Number(aNext);
 
@@ -149,10 +251,10 @@
   // Expected SARSA algorithm
   //====================================================
 
-  const ExpectedSarsaQTableUpdate = (state, a, r, stateNext, aNext) => {
+  const ExpectedSarsaCalcQValue = stepData => {
     let g;
-    if (mazeComp.isTerminal(stateNext)) {
-      g = r;
+    if (mazeComp.isTerminal(stepData.stateNext)) {
+      g = stepData.r;
     } else {
       let vNextExpected = 0.0;
       let prob;
@@ -162,20 +264,27 @@
       // by the number of actions (random action selection case of e-greedy)
       prob = epsilon / numA;
       for (let a = 0; a < numA; a++) {
-        vNextExpected += prob * mazeComp.getQValue(stateNext, a);
+        vNextExpected += prob * mazeComp.getQValue(stepData.stateNext, a);
       }
 
       // the maximum Q action has a probability of (1 - epsilon)
       // to be selected (greedy action selection case of e-greedy)
       prob = 1.0 - epsilon;
-      let aNextGreedy = mazeComp.getPolicy(stateNext);
-      vNextExpected += prob * mazeComp.getQValue(stateNext, aNextGreedy);
+      let aNextGreedy = mazeComp.getPolicy(stepData.stateNext);
+      vNextExpected +=
+        prob * mazeComp.getQValue(stepData.stateNext, aNextGreedy);
 
       // G with respect to expected value V of next state
-      g = r + gamma * vNextExpected;
+      g = stepData.r + gamma * vNextExpected;
     }
-    let q = (1.0 - alpha) * mazeComp.getQValue(state, a) + alpha * g;
-    mazeComp.setQValue(state, a, q);
+    if (useQNet) {
+      // pure g is returned in case a DQN is used, because the network
+      // learning rate replaces the table variant alpha parameter ...
+      return g;
+    }
+    return (
+      (1.0 - alpha) * mazeComp.getQValue(stepData.state, stepData.a) + alpha * g
+    );
   };
 
   const runExpectedSarsaEpisodeStep = (state, a) => {
@@ -191,7 +300,17 @@
       stepTimer = setTimeout(() => {
         [stateNext, r] = mazeComp.step(state, a);
         aNext = mazeComp.getEpsilonGreedyAction(stateNext, epsilon);
-        ExpectedSarsaQTableUpdate(state, a, r, stateNext, aNext);
+        if (useQNet) {
+          QNetUpdate(
+            { state, a, r, stateNext, aNext },
+            ExpectedSarsaCalcQValue
+          );
+        } else {
+          QTableUpdate(
+            { state, a, r, stateNext, aNext },
+            ExpectedSarsaCalcQValue
+          );
+        }
         state = [...stateNext];
         a = Number(aNext);
 
@@ -252,7 +371,7 @@
     return seenStateActions[i];
   };
 
-  const runDynaQEpisodeStep = (state) => {
+  const runDynaQEpisodeStep = state => {
     let stateNext;
     let a, r;
 
@@ -265,7 +384,7 @@
       stepTimer = setTimeout(() => {
         a = mazeComp.getEpsilonGreedyAction(state, epsilon);
         [stateNext, r] = mazeComp.step(state, a);
-        QLearningQTableUpdate(state, a, r, stateNext);
+        QTableUpdate({ state, a, r, stateNext }, QLearningCalcQValue);
         DynaQModelUpdate(state, a, r, stateNext);
         state = [...stateNext];
 
@@ -276,7 +395,10 @@
           let mStateNext;
           [mState, ma] = DynaQGetModelStateAction();
           [mStateNext, mr] = envModel[mState[0]][mState[1]][ma];
-          QLearningQTableUpdate(mState, ma, mr, mStateNext);
+          QTableUpdate(
+            { state: mState, a: ma, r: mr, stateNext: mStateNext },
+            QLearningCalcQValue
+          );
         }
 
         rewardSum += r;
@@ -339,7 +461,7 @@
     }
   };
 
-  const runMonteCarloEpisodeStep = (state) => {
+  const runMonteCarloEpisodeStep = state => {
     let stateNext;
     let a, r;
 
@@ -380,7 +502,7 @@
   const algorithms = [
     { name: "Q-Learning", func: runQLearningEpisode },
     { name: "SARSA", func: runSarsaEpisode },
-    { name: "Expected SARSA", func: runExpectedSarsaEpisode },
+    { name: "Expected-SARSA", func: runExpectedSarsaEpisode },
     { name: "Dyna-Q", func: runDynaQEpisode },
     { name: "Monte Carlo", func: runMonteCarloEpisode }
   ];
@@ -413,6 +535,8 @@
     rewardPerEpisode = [];
     mazeComp.initQValues();
     plotComp.clearPlot();
+    QNetComp.resetModel();
+    DataComp.clear();
   };
 </script>
 
@@ -432,7 +556,7 @@
     margin: 20px;
   }
   select {
-    margin: 0px 20px;
+    margin: 0px 10px;
     color: inherit;
     background: inherit;
   }
@@ -441,6 +565,14 @@
   }
   button {
     margin: 0px 10px;
+  }
+  input {
+    margin: 5px;
+  }
+  div.flex {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
   }
 </style>
 
@@ -462,6 +594,10 @@
         <option value={algo.name}>{algo.name}</option>
       {/each}
     </select>
+    <div class="flex">
+      <input type="checkbox" bind:checked={useQNet} on:change={init} />
+      DQN
+    </div>
     <button on:click={init}>init</button>
     <button on:click={halt}>halt</button>
     <button on:click={runEpisode}>run</button>
@@ -478,3 +614,6 @@
       bind:this={mazeComp} />
   </div>
 </div>
+
+<Data {maxData} bind:this={DataComp} />
+<QNet bind:this={QNetComp} />
