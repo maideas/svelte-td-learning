@@ -1,6 +1,8 @@
 <script>
   import { onMount } from "svelte";
 
+  export let duelingQNet = false;
+
   class DuelingLayer extends tf.layers.Layer {
     constructor() {
       super({});
@@ -21,16 +23,28 @@
     }
   }
 
-  let model;
+  let model = undefined;
 
   onMount(() => {
-    //model = createModel();
-    model = createDuelingModel();
+    initModel();
   });
 
+  export const initModel = () => {
+    if (duelingQNet) {
+      createDuelingModel();
+    } else {
+      createModel();
+    }
+  };
+
   const createModel = () => {
-    const model = tf.sequential();
     const lr = 0.005;
+
+    if (model != undefined) {
+      model.dispose();
+    }
+
+    model = tf.sequential();
 
     model.add(
       tf.layers.dense({
@@ -55,11 +69,14 @@
       loss: "meanSquaredError",
       metrics: ["accuracy"]
     });
-    return model;
   };
 
   const createDuelingModel = () => {
     const lr = 0.005;
+
+    if (model != undefined) {
+      model.dispose();
+    }
 
     const input = tf.input({ shape: [2] });
 
@@ -86,18 +103,13 @@
 
     const output = new DuelingLayer().apply([adv2, val2]);
 
-    const model = tf.model({ inputs: input, outputs: output });
+    model = tf.model({ inputs: input, outputs: output });
 
     model.compile({
       optimizer: tf.train.adam(lr),
       loss: "meanSquaredError",
       metrics: ["accuracy"]
     });
-    return model;
-  };
-
-  export const resetModel = () => {
-    model.resetStates();
   };
 
   export const fit = async (dataX, dataY) => {

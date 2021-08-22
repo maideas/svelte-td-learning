@@ -49,6 +49,7 @@
   let DataComp;
   let QNetComp;
   let useQNet = false;
+  let duelingQNet = false;
   let trainDistanceCount = 0;
 
   //====================================================
@@ -511,7 +512,7 @@
   const algorithms = [
     { name: "Q-Learning", func: runQLearningEpisode },
     { name: "SARSA", func: runSarsaEpisode },
-    { name: "Expected-SARSA", func: runExpectedSarsaEpisode },
+    { name: "Expected SARSA", func: runExpectedSarsaEpisode },
     { name: "Dyna-Q", func: runDynaQEpisode },
     { name: "Monte Carlo", func: runMonteCarloEpisode }
   ];
@@ -544,7 +545,7 @@
     rewardPerEpisode = [];
     mazeComp.initQValues();
     plotComp.clearPlot();
-    QNetComp.resetModel();
+    QNetComp.initModel();
     DataComp.clear();
   };
 </script>
@@ -565,7 +566,7 @@
     margin: 20px;
   }
   select {
-    margin: 0px 10px;
+    margin: 0px 5px;
     color: inherit;
     background: inherit;
   }
@@ -573,15 +574,16 @@
     margin: 0px;
   }
   button {
-    margin: 0px 10px;
+    margin: 0px 5px;
   }
   input {
     margin: 5px;
   }
-  div.flex {
+  div.flexrow {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    margin: 0 10px;
+    margin: 0 5px;
   }
 </style>
 
@@ -603,9 +605,13 @@
         <option value={algo.name}>{algo.name}</option>
       {/each}
     </select>
-    <div class="flex">
+    <div class="flexrow">
       <input type="checkbox" bind:checked={useQNet} on:change={init} />
       DQN
+    </div>
+    <div class="flexrow">
+      <input type="checkbox" bind:checked={duelingQNet} on:change={init} />
+      Dueling
     </div>
     <button on:click={init}>init</button>
     <button on:click={halt}>halt</button>
@@ -626,4 +632,4 @@
 
 <Data maxData={numStates} bind:this={MazeDataComp} />
 <Data {maxData} bind:this={DataComp} />
-<QNet bind:this={QNetComp} />
+<QNet {duelingQNet} bind:this={QNetComp} />
