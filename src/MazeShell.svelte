@@ -23,6 +23,8 @@
   export let numX = 5;
   export let numY = 5;
 
+  const numStates = numX * numY;
+
   //====================================================
 
   let mazeComp;
@@ -43,10 +45,27 @@
   const batchSize = 100;
   const trainDistance = 10;
 
+  let MazeDataComp;
   let DataComp;
   let QNetComp;
   let useQNet = false;
   let trainDistanceCount = 0;
+
+  //====================================================
+
+  const normalizeState = state => {
+    return QNetComp.normalize(state, [0, 0], [numX - 1, numY - 1]);
+  };
+
+  onMount(() => {
+    for (let y = 0; y < numY; y++) {
+      for (let x = 0; x < numX; x++) {
+        let state = [x, y];
+        let normState = normalizeState(state);
+        MazeDataComp.add({ state, normState });
+      }
+    }
+  });
 
   //====================================================
   // Q table update
@@ -62,6 +81,9 @@
   //====================================================
 
   const QNetUpdate = (stepData, calcQValueFunc) => {
+    // normalize state value and add it to stepData item ...
+    stepData.normState = normalizeState(stepData.state);
+
     // add the given data item to the DataComp memory ...
     DataComp.add(stepData);
 
@@ -73,18 +95,13 @@
     // get a random batch of data from the DataComp memory ...
     let stepDataBatch = DataComp.getBatch(batchSize);
 
-    // prepare Q network input data ...
+    // prepare Q network input data (normalized state values) ...
     let normStates = [];
     stepDataBatch.forEach(stepData => {
-      let normState = QNetComp.normalize(
-        stepData.state,
-        [0, 0],
-        [numX - 1, numY - 1]
-      );
-      normStates.push(normState);
+      normStates.push(stepData.normState);
     });
 
-    // get current Q network output data (Q values) for the 
+    // get current Q network output data (Q values) for the
     // given input data (states) ...
     QNetComp.predict(normStates).then(QValues => {
       stepDataBatch.forEach((stepData, i) => {
@@ -94,23 +111,15 @@
 
       // use the prepared X and Y data to adjust the Q network ...
       QNetComp.fit(normStates, QValues).then(() => {
-        // update the mazeComp Q values using the adjusted Q network ...
-        for (let y = 0; y < numY; y++) {
-          for (let x = 0; x < numX; x++) {
-            let state = [x, y];
-            let normState = QNetComp.normalize(
-              state,
-              [0, 0],
-              [numX - 1, numY - 1]
-            );
-            let normStates = [normState];
-            QNetComp.predict(normStates).then(QValues => {
-              for (let a = 0; a < numA; a++) {
-                mazeComp.setQValue(state, a, QValues[0][a]);
-              }
-            });
-          }
-        }
+        // mazeComp is used to query Q values, so we need to:
+        // update all mazeComp Q values using the adjusted Q network ...
+        MazeDataComp.getAll().forEach(data => {
+          QNetComp.predict([data.normState]).then(QValues => {
+            for (let a = 0; a < numA; a++) {
+              mazeComp.setQValue(data.state, a, QValues[0][a]);
+            }
+          });
+        });
       });
     });
   };
@@ -615,5 +624,6 @@
   </div>
 </div>
 
+<Data maxData={numStates} bind:this={MazeDataComp} />
 <Data {maxData} bind:this={DataComp} />
 <QNet bind:this={QNetComp} />

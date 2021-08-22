@@ -24,6 +24,10 @@
     return result;
   };
 
+  export const getAll = () => {
+    return [...data];
+  };
+
   export const clear = () => {
     data = [];
   };
