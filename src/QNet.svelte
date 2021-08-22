@@ -30,20 +30,26 @@
   });
 
   export const initModel = () => {
-    if (duelingQNet) {
-      createDuelingModel();
-    } else {
-      createModel();
-    }
-  };
-
-  const createModel = () => {
     const lr = 0.005;
 
     if (model != undefined) {
       model.dispose();
     }
 
+    if (duelingQNet) {
+      createDuelingModel();
+    } else {
+      createModel();
+    }
+
+    model.compile({
+      optimizer: tf.train.adam(lr),
+      loss: "meanSquaredError",
+      metrics: ["accuracy"]
+    });
+  };
+
+  const createModel = () => {
     model = tf.sequential();
 
     model.add(
@@ -63,21 +69,9 @@
     model.add(
       tf.layers.dense({ units: 4, useBias: true, activation: "linear" })
     );
-
-    model.compile({
-      optimizer: tf.train.adam(lr),
-      loss: "meanSquaredError",
-      metrics: ["accuracy"]
-    });
   };
 
   const createDuelingModel = () => {
-    const lr = 0.005;
-
-    if (model != undefined) {
-      model.dispose();
-    }
-
     const input = tf.input({ shape: [2] });
 
     const dense1 = tf.layers
@@ -104,12 +98,6 @@
     const output = new DuelingLayer().apply([adv2, val2]);
 
     model = tf.model({ inputs: input, outputs: output });
-
-    model.compile({
-      optimizer: tf.train.adam(lr),
-      loss: "meanSquaredError",
-      metrics: ["accuracy"]
-    });
   };
 
   export const fit = async (dataX, dataY) => {
