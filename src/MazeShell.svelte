@@ -93,7 +93,7 @@
     trainDistanceCount = 0;
 
     // get a random batch of data from the DataComp memory ...
-    let stepDataBatch = DataComp.getBatch(batchSize);
+    const stepDataBatch = DataComp.getBatch(batchSize);
 
     // prepare Q network input data (normalized state values) ...
     let normStates = [];
@@ -103,25 +103,25 @@
 
     // get current Q network output data (Q values) for the
     // given input data (states) ...
-    QNetComp.predict(normStates).then(QValues => {
-      stepDataBatch.forEach((stepData, i) => {
-        // update the selected actions related Q values ...
-        QValues[i][stepData.a] = calcQValueFunc(stepData);
-      });
+    let QValues = QNetComp.predict(normStates);
 
-      // use the prepared X and Y data to adjust the Q network ...
-      QNetComp.fit(normStates, QValues).then(() => {
-        // mazeComp is used to query Q values, so we need to:
-        // update all mazeComp Q values using the adjusted Q network ...
-        MazeDataComp.getAll().forEach(data => {
-          QNetComp.predict([data.normState]).then(QValues => {
-            for (let a = 0; a < numA; a++) {
-              mazeComp.setQValue(data.state, a, QValues[0][a]);
-            }
-          });
-        });
-      });
+    stepDataBatch.forEach((stepData, i) => {
+      // update the selected actions related Q values ...
+      QValues[i][stepData.a] = calcQValueFunc(stepData);
     });
+
+    // use the prepared X and Y data to adjust the Q network ...
+    QNetComp.fit(normStates, QValues);
+
+    // mazeComp is used to query Q values, so we need to:
+    // update all mazeComp Q values using the adjusted Q network ...
+    MazeDataComp.getAll().forEach(data => {
+      let QValues = QNetComp.predict([data.normState]);
+      mazeComp.setQValues(data.state, QValues[0]);
+    });
+
+    // tensorflow memory footprint debugging ...
+    //console.table(tf.memory());
   };
 
   //====================================================

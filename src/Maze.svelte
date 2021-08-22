@@ -74,6 +74,12 @@
     }
   };
 
+  export const setQValues = (state, QValues) => {
+    for (let a = 0; a < numA; a++) {
+      setQValue(state, a, QValues[a]);
+    }
+  };
+
   export const getQValue = (state, a) => {
     return mazeTileComps[state[0]][state[1]].getQValue(a);
   };

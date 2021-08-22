@@ -1,10 +1,31 @@
 <script>
   import { onMount } from "svelte";
 
+  class DuelingLayer extends tf.layers.Layer {
+    constructor() {
+      super({});
+    }
+    getClassName() {
+      return "DuelingLayer";
+    }
+    computeOutputShape(inputShape) {
+      return inputShape[0];
+    }
+    call(input, kwargs) {
+      return tf.tidy(() => {
+        const A = input[0];
+        const V = input[1];
+        const axis = 1;
+        return A.sub(A.mean(axis).reshape([-1, 1])).add(V);
+      });
+    }
+  }
+
   let model;
 
   onMount(() => {
-    model = createModel();
+    //model = createModel();
+    model = createDuelingModel();
   });
 
   const createModel = () => {
@@ -37,11 +58,49 @@
     return model;
   };
 
+  const createDuelingModel = () => {
+    const lr = 0.005;
+
+    const input = tf.input({ shape: [2] });
+
+    const dense1 = tf.layers
+      .dense({ units: 10, useBias: true, activation: "tanh" })
+      .apply(input);
+    const dense2 = tf.layers
+      .dense({ units: 10, useBias: true, activation: "tanh" })
+      .apply(dense1);
+
+    const adv1 = tf.layers
+      .dense({ units: 10, useBias: true, activation: "tanh" })
+      .apply(dense2);
+    const adv2 = tf.layers
+      .dense({ units: 4, useBias: true, activation: "linear" })
+      .apply(adv1);
+
+    const val1 = tf.layers
+      .dense({ units: 10, useBias: true, activation: "tanh" })
+      .apply(dense2);
+    const val2 = tf.layers
+      .dense({ units: 1, useBias: true, activation: "linear" })
+      .apply(val1);
+
+    const output = new DuelingLayer().apply([adv2, val2]);
+
+    const model = tf.model({ inputs: input, outputs: output });
+
+    model.compile({
+      optimizer: tf.train.adam(lr),
+      loss: "meanSquaredError",
+      metrics: ["accuracy"]
+    });
+    return model;
+  };
+
   export const resetModel = () => {
     model.resetStates();
-  }
+  };
 
-  export const fit = (dataX, dataY) => {
+  export const fit = async (dataX, dataY) => {
     const epochs = 10;
 
     const trainX = tf.tensor2d(
@@ -59,7 +118,7 @@
       console.log("onEpochEnd", "[ epoch", n, "of", epochs, "]", logs);
     };
 
-    return model.fit(trainX, trainY, {
+    await model.fit(trainX, trainY, {
       batchSize: dataX.length,
       epochs: epochs,
       shuffle: true,
@@ -67,11 +126,18 @@
         /* onEpochEnd */
       }
     });
+
+    trainX.dispose();
+    trainY.dispose();
   };
 
   export const predict = dataX => {
-    const X = tf.tensor2d(dataX, [dataX.length, dataX[0].length], "float32");
-    return model.predict(X).array();
+    let a;
+    tf.tidy(() => {
+      const X = tf.tensor2d(dataX, [dataX.length, dataX[0].length], "float32");
+      a = model.predict(X).arraySync();
+    });
+    return a;
   };
 
   export const normalize = (dataX, min, max) => {
