@@ -45,12 +45,16 @@
   const batchSize = 100;
   const trainDistance = 10;
 
+  let trainDistanceCount = 0;
+
   let MazeDataComp;
   let DataComp;
   let QNetComp;
   let useQNet = false;
   let duelingQNet = false;
-  let trainDistanceCount = 0;
+  let runDisabled = false;
+  let useQNetDisabled = false;
+  let duelingQNetDisabled = true;
 
   //====================================================
 
@@ -518,6 +522,7 @@
   ];
 
   const runEpisode = () => {
+    runDisabled = true;
     episodeTimer = setTimeout(() => {
       if (episode < numEpisodes) {
         episode++;
@@ -526,6 +531,8 @@
             algo.func();
           }
         });
+      } else {
+        runDisabled = false;
       }
     }, 0);
   };
@@ -537,9 +544,15 @@
     if (stepTimer) {
       clearTimeout(stepTimer);
     }
+    runDisabled = false;
   };
 
   const init = () => {
+    duelingQNetDisabled = !useQNet;
+    if (duelingQNetDisabled) {
+      duelingQNet = false;
+    }
+
     episode = 0;
     stepsPerEpisode = [];
     rewardPerEpisode = [];
@@ -585,6 +598,9 @@
     align-items: center;
     margin: 0 5px;
   }
+  div.flexrow.disabled {
+    opacity: 0.6;
+  }
 </style>
 
 <div class="container" style="width: {16 + numX * 100 + (numX - 1) * 4}px;">
@@ -605,17 +621,25 @@
         <option value={algo.name}>{algo.name}</option>
       {/each}
     </select>
-    <div class="flexrow">
-      <input type="checkbox" bind:checked={useQNet} on:change={init} />
+    <div class="flexrow" class:disabled={useQNetDisabled}>
+      <input
+        type="checkbox"
+        disabled={useQNetDisabled}
+        bind:checked={useQNet}
+        on:change={init} />
       DQN
     </div>
-    <div class="flexrow">
-      <input type="checkbox" bind:checked={duelingQNet} on:change={init} />
+    <div class="flexrow" class:disabled={duelingQNetDisabled}>
+      <input
+        type="checkbox"
+        disabled={duelingQNetDisabled}
+        bind:checked={duelingQNet}
+        on:change={init} />
       Dueling
     </div>
     <button on:click={init}>init</button>
     <button on:click={halt}>halt</button>
-    <button on:click={runEpisode}>run</button>
+    <button on:click={runEpisode} disabled={runDisabled}>run</button>
   </div>
 
   <div class="narrow-box">
