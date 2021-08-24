@@ -85,7 +85,7 @@
   // Q network update
   //====================================================
 
-  const QNetUpdate = (stepData, calcQValueFunc) => {
+  const QNetUpdate = async (stepData, calcQValueFunc) => {
     // normalize state value and add it to stepData item ...
     stepData.normState = normalizeState(stepData.state);
 
@@ -116,7 +116,7 @@
     });
 
     // use the prepared X and Y data to adjust the Q network ...
-    QNetComp.fit(normStates, QValues);
+    await QNetComp.fit(normStates, QValues);
 
     // mazeComp is used to query Q values, so we need to:
     // update all mazeComp Q values using the adjusted Q network ...
@@ -161,11 +161,11 @@
       plotComp.updatePlot();
       runEpisode();
     } else {
-      stepTimer = setTimeout(() => {
+      stepTimer = setTimeout(async () => {
         a = mazeComp.getEpsilonGreedyAction(state, epsilon);
         [stateNext, r] = mazeComp.step(state, a);
         if (useQNet) {
-          QNetUpdate({ state, a, r, stateNext }, QLearningCalcQValue);
+          await QNetUpdate({ state, a, r, stateNext }, QLearningCalcQValue);
         } else {
           QTableUpdate({ state, a, r, stateNext }, QLearningCalcQValue);
         }
@@ -227,11 +227,11 @@
       plotComp.updatePlot();
       runEpisode();
     } else {
-      stepTimer = setTimeout(() => {
+      stepTimer = setTimeout(async () => {
         [stateNext, r] = mazeComp.step(state, a);
         aNext = mazeComp.getEpsilonGreedyAction(stateNext, epsilon);
         if (useQNet) {
-          QNetUpdate({ state, a, r, stateNext, aNext }, SarsaCalcQValue);
+          await QNetUpdate({ state, a, r, stateNext, aNext }, SarsaCalcQValue);
         } else {
           QTableUpdate({ state, a, r, stateNext, aNext }, SarsaCalcQValue);
         }
@@ -311,11 +311,11 @@
       plotComp.updatePlot();
       runEpisode();
     } else {
-      stepTimer = setTimeout(() => {
+      stepTimer = setTimeout(async () => {
         [stateNext, r] = mazeComp.step(state, a);
         aNext = mazeComp.getEpsilonGreedyAction(stateNext, epsilon);
         if (useQNet) {
-          QNetUpdate(
+          await QNetUpdate(
             { state, a, r, stateNext, aNext },
             ExpectedSarsaCalcQValue
           );
