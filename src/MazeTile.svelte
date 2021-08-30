@@ -18,10 +18,8 @@
   let blocked = false;
   let terminal = false;
   let reward = 0;
-  let QValues;
+  let QValues = Array.from({ length: numA }, () => 0);
 
-  let maxQValue;
-  let policy;
   let angle;
   let bg_style = "";
 
@@ -44,36 +42,25 @@
   };
   export const setReward = r => {
     reward = r;
-  };
-
-  export const getPolicy = () => {
-    return policy;
-  };
-
-  export const getQValue = dir => {
-    return terminal ? reward : QValues[dir];
+    if (terminal) {
+      QValues = Array.from({ length: numA }, () => r);
+    }
   };
 
   export const getMaxQValue = () => {
-    return terminal ? reward : maxQValue;
+    return Math.max(...QValues);
   };
 
   const updatePolicy = () => {
-    maxQValue = Math.max(...QValues);
-    policy = QValues.indexOf(maxQValue);
+    let policy = QValues.indexOf(getMaxQValue());
     angle = (policy * 90).toFixed();
   };
 
-  export const setQValue = (dir, val) => {
-    QValues[dir] = val;
-    updatePolicy();
-  };
-
-  export const initQValues = () => {
-    QValues = Array(4)
-      .fill()
-      .map(() => Math.random());
-    updatePolicy();
+  export const setQValues = values => {
+    if (!terminal && !blocked) {
+      QValues = values;
+      updatePolicy();
+    }
   };
 
   export const setHeat = h => {
@@ -87,8 +74,6 @@
       bg_style = "background: rgb(" + bg_r + "," + bg_g + "," + bg_b + ", 1);";
     }
   };
-
-  initQValues();
 </script>
 
 <style>

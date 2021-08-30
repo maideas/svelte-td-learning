@@ -30,81 +30,25 @@
     rewards.forEach(data => {
       mazeTileComps[data[0]][data[1]].setReward(data[2]);
     });
-    initQValues();
   });
 
   //====================================================
 
-  export const getRandomInt = n => {
-    // result range [0 .. n-1]
-    return Math.floor(Math.random() * Math.floor(n));
-  };
-
-  //====================================================
-
-  export const isBlocked = state => {
+  const isBlocked = state => {
     return mazeTileComps[state[0]][state[1]].isBlocked();
   };
 
-  export const isTerminal = state => {
+  const isTerminal = state => {
     return mazeTileComps[state[0]][state[1]].isTerminal();
   };
 
-  export const initQValues = () => {
-    for (let y = 0; y < numY; y++) {
-      for (let x = 0; x < numX; x++) {
-        mazeTileComps[x][y].initQValues();
-      }
-    }
+  export const setQValues = (state, QValues) => {
+    mazeTileComps[state[0]][state[1]].setQValues(QValues);
     updateHeatMap();
   };
 
-  export const setQValue = (state, a, val) => {
-    if (state[0] >= 0 && state[0] < numX && state[1] >= 0 && state[1] < numY) {
-      mazeTileComps[state[0]][state[1]].setQValue(a, val);
-      updateHeatMap();
-    } else {
-      console.log(
-        "ERROR: Invalid setQValue coordinates [",
-        state[0],
-        ":",
-        state[1],
-        "] !"
-      );
-    }
-  };
-
-  export const setQValues = (state, QValues) => {
-    for (let a = 0; a < numA; a++) {
-      setQValue(state, a, QValues[a]);
-    }
-  };
-
-  export const getQValue = (state, a) => {
-    return mazeTileComps[state[0]][state[1]].getQValue(a);
-  };
-
-  export const getMaxQValue = state => {
-    return mazeTileComps[state[0]][state[1]].getMaxQValue();
-  };
-
-  export const getPolicy = state => {
-    return mazeTileComps[state[0]][state[1]].getPolicy();
-  };
-
   const getReward = state => {
-    if (state[0] >= 0 && state[0] < numX && state[1] >= 0 && state[1] < numY) {
-      return mazeTileComps[state[0]][state[1]].getReward();
-    } else {
-      console.log(
-        "ERROR: Invalid getReward coordinates [",
-        state[0],
-        ":",
-        state[1],
-        "] !"
-      );
-      return 0;
-    }
+    return mazeTileComps[state[0]][state[1]].getReward();
   };
 
   const updateHeatMap = () => {
@@ -132,7 +76,10 @@
     }
   };
 
-  //====================================================
+  const getRandomInt = n => {
+    // result range [0 .. n-1]
+    return Math.floor(Math.random() * Math.floor(n));
+  };
 
   export const getRandomStartState = () => {
     while (true) {
@@ -140,14 +87,6 @@
       if (!isTerminal(state) && !isBlocked(state)) {
         return state;
       }
-    }
-  };
-
-  export const getEpsilonGreedyAction = (state, epsilon) => {
-    if (Math.random() < epsilon) {
-      return getRandomInt(numA); // choose random action with epsilon probability
-    } else {
-      return getPolicy(state); // else choose action according to current policy
     }
   };
 
@@ -170,7 +109,7 @@
       stateNext = [...state];
     }
     // in this example environment immediate reward is only based on next state value
-    return [stateNext, getReward(stateNext)];
+    return [stateNext, getReward(stateNext), isTerminal(stateNext)];
   };
 </script>
 
