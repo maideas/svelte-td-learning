@@ -102,7 +102,7 @@
     runDisabled = false;
   };
 
-  const init = () => {
+  const baseInit = () => {
     duelingQNetDisabled = !useQNet;
     if (duelingQNetDisabled) {
       duelingQNet = false;
@@ -111,6 +111,18 @@
     stepsPerEpisode = [];
     rewardPerEpisode = [];
     plotComp.clearPlot();
+
+    // when selectedAlgorithm changes, the agent onMount calls the
+    // selected agent init method, which is a safe way to handle the
+    // unmount-mount of agent components
+    // otherwise there is a possible race condition between the agent
+    // component mount and the call of its init method based on the
+    // agent component handle
+    // -> baseInit does not call agentComp.init
+  };
+
+  const init = () => {
+    baseInit();
     agentComp.init();
   };
 </script>
@@ -168,7 +180,7 @@
 
   <div class="box">EPISODE : {episode}</div>
   <div class="box">
-    <select bind:value={selectedAlgorithm} on:change={init}>
+    <select bind:value={selectedAlgorithm} on:change={baseInit}>
       {#each algorithms as algo}
         <option value={algo.name}>{algo.name}</option>
       {/each}
