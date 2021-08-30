@@ -1,5 +1,4 @@
 <script>
-  import { onMount } from "svelte";
   import QModelShell from "./QModelShell.svelte";
 
   const epsilon = 0.1; // exploration probability
@@ -103,10 +102,6 @@
   export const init = () => {
     QModelShellComp.init();
   };
-
-  onMount(() => {
-    init();
-  });
 
   export const halt = () => {
     if (stepTimer) {
