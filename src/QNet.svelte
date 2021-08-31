@@ -18,7 +18,8 @@
 
   let trainDistanceCount = 0;
   let model = undefined;
-  let DataComp;
+
+  let DataComp; // represents the experience replay buffer
 
   //====================================================
 
