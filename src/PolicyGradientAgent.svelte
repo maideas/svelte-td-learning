@@ -38,14 +38,15 @@
     // calculate action probabilities from logits
     let actionProbs = ModelShellComp.softmaxForward(logits);
 
-    // calculate action probability gradients
+    // calculate action probability gradients for gradient ascent
+    // loss(a) = log(a)*G  ->  grad(a) = loss'(a) = G / a
     let actionGrads = Array(actionProbs.length).fill(0);
-    actionGrads[stepData.a] = -Math.log(actionProbs[stepData.a]) * stepData.g;
+    actionGrads[stepData.a] = stepData.g / (actionProbs[stepData.a] + 1E-6);
 
     // calculate logits gradients
     let logitsGrads = ModelShellComp.softmaxBackward(actionGrads);
 
-    // apply logits gradients
+    // apply logits gradients 
     let newLogits = [];
     for (let n = 0; n < logits.length; n++) {
       newLogits.push(logits[n] + logitsGrads[n]);
@@ -68,13 +69,11 @@
 
   const PolicyGradientModelUpdate = async () => {
     // calculate accumulated future reward for each trajectory step
-    for (let n = 0; n < trajectory.length; n++) {
-      let i = trajectory.length - 1 - n;
-
-      if (n > 0) {
-        trajectory[i].g = trajectory[i].r + gamma * trajectory[i + 1].g;
-      } else {
+    for (let i = trajectory.length - 1; i >= 0; i--) {
+      if (trajectory[i].done) {
         trajectory[i].g = trajectory[i].r;
+      } else {
+        trajectory[i].g = trajectory[i].r + gamma * trajectory[i + 1].g;
       }
     }
 
@@ -117,7 +116,7 @@
       stepTimer = setTimeout(() => {
         a = ModelShellComp.getEpsilonGreedyAction(state, epsilon);
         [stateNext, r, done] = envStepFunc(state, a);
-        trajectory.push({ state, a, r });
+        trajectory.push({ state, a, r, done });
         state = [...stateNext];
 
         rewardSum += r;
