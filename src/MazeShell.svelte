@@ -8,6 +8,7 @@
   import ExpectedSarsaAgent from "./ExpectedSarsaAgent.svelte";
   import DynaQAgent from "./DynaQAgent.svelte";
   import MonteCarloAgent from "./MonteCarloAgent.svelte";
+  import PolicyGradientAgent from "./PolicyGradientAgent.svelte";
 
   //====================================================
 
@@ -75,7 +76,8 @@
     { name: "SARSA" },
     { name: "Expected SARSA" },
     { name: "Dyna-Q" },
-    { name: "Monte Carlo" }
+    { name: "Monte Carlo" },
+    { name: "Policy Gradient" }
   ];
 
   const runEpisode = () => {
@@ -270,6 +272,16 @@
     {numA}
     {useQNet}
     {duelingQNet}
+    {envStepFunc}
+    {episodeDoneFunc}
+    on:modelChanged={modelChangedFunc}
+    bind:this={agentComp} />
+{:else if selectedAlgorithm == 'Policy Gradient'}
+  <PolicyGradientAgent
+    {numX}
+    {numY}
+    {numA}
+    useNet={useQNet}
     {envStepFunc}
     {episodeDoneFunc}
     on:modelChanged={modelChangedFunc}
