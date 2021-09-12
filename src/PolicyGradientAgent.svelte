@@ -30,25 +30,6 @@
   // Policy Gradient algorithm
   //====================================================
 
-  const clipGrads = grads => {
-    // calculate the vector norm max value ...
-    let squaredGrads = [];
-    for (let n = 0; n < grads.length; n++) {
-      squaredGrads.push(grads[n] * grads[n]);
-    }
-    let m = Math.max(...squaredGrads);
-
-    // if vector norm max value > threshold, the vector is scaled ...
-    if (m > 1.0) {
-      let clippedGrads = [...grads];
-      for (let n = 0; n < clippedGrads.length; n++) {
-        clippedGrads[n] /= m;
-      }
-      return clippedGrads;
-    }
-    return grads;
-  };
-
   const shiftLogits = logits => {
     // for better numeric stability (http://cs231n.github.io/linear-classify/)
     let m = Math.max(...logits);
@@ -68,14 +49,8 @@
     let actionGrads = Array(actionProbs.length).fill(0);
     actionGrads[stepData.a] = -stepData.g / (actionProbs[stepData.a] + 1e-6);
 
-    // for better stability, we clip the gradients ...
-    actionGrads = clipGrads(actionGrads);
-
     // calculate logits gradients
     let logitsGrads = ModelShellComp.softmaxBackward(actionGrads);
-
-    // for better stability, we clip the gradients ...
-    logitsGrads = clipGrads(logitsGrads);
 
     // apply logits gradients
     let adaptedLogits = [];
