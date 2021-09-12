@@ -36,7 +36,7 @@
     for (let n = 0; n < grads.length; n++) {
       squaredGrads.push(grads[n] * grads[n]);
     }
-    let m = Math.max([...squaredGrads]);
+    let m = Math.max(...squaredGrads);
 
     // if vector norm max value > threshold, the vector is scaled ...
     if (m > 1.0) {
