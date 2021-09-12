@@ -7,7 +7,6 @@
   export let numA;
   export let useNet = true;
   export let learningRate = 0.002; // usually not needed to be overidden
-  export let trainDistance = 10;
 
   //====================================================
   // softmax
@@ -97,8 +96,12 @@
     LogitsModelComp.init();
   };
 
-  export const updateModel = async (stepData, calcLogitsFunc) => {
+  export const updateModel = (stepData, calcLogitsFunc) => {
     return LogitsModelComp.updateModel(stepData, calcLogitsFunc);
+  };
+
+  export const takeModel = () => {
+    return LogitsModelComp.takeModel();
   };
 </script>
 
@@ -108,7 +111,6 @@
     {numY}
     {numA}
     {learningRate}
-    {trainDistance}
     on:modelChanged
     bind:this={LogitsModelComp} />
 {:else}

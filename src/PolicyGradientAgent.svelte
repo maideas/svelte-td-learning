@@ -3,7 +3,7 @@
 
   const epsilon = 0.1; // exploration probability
   const alpha = 0.2; // learning rate
-  const gamma = 1.0; // future reward discount factor
+  const gamma = 0.9; // future reward discount factor
 
   export let numX;
   export let numY;
@@ -16,10 +16,6 @@
   let steps = 0;
   let rewardSum = 0;
   let done = false;
-
-  let actionProbs = Array.from({ length: numX }, () =>
-    Array.from({ length: numY }, () => null)
-  );
 
   let ModelShellComp;
 
@@ -34,74 +30,84 @@
   // Policy Gradient algorithm
   //====================================================
 
+  const clipGrads = grads => {
+    // calculate the vector norm max value ...
+    let squaredGrads = [];
+    for (let n = 0; n < grads.length; n++) {
+      squaredGrads.push(grads[n] * grads[n]);
+    }
+    let m = Math.max([...squaredGrads]);
+
+    // if vector norm max value > threshold, the vector is scaled ...
+    if (m > 1.0) {
+      let clippedGrads = [...grads];
+      for (let n = 0; n < clippedGrads.length; n++) {
+        clippedGrads[n] /= m;
+      }
+      return clippedGrads;
+    }
+    return grads;
+  };
+
+  const shiftLogits = logits => {
+    // for better numeric stability (http://cs231n.github.io/linear-classify/)
+    let m = Math.max(...logits);
+    let shiftedLogits = [];
+    logits.forEach(e => {
+      shiftedLogits.push(e - m);
+    });
+    return shiftedLogits;
+  };
+
   const calcLogits = (logits, stepData) => {
     // calculate action probabilities from logits
     let actionProbs = ModelShellComp.softmaxForward(logits);
 
-    // calculate action probability gradients for gradient ascent
-    // loss(a) = log(a)*G  ->  grad(a) = loss'(a) = G / a
+    // calculate action probability gradients
+    // loss(a) = -log(a)*G  ->  grad(a) = loss'(a) = -G / a
     let actionGrads = Array(actionProbs.length).fill(0);
-    actionGrads[stepData.a] = stepData.g / (actionProbs[stepData.a] + 1E-6);
+    actionGrads[stepData.a] = -stepData.g / (actionProbs[stepData.a] + 1e-6);
+
+    // for better stability, we clip the gradients ...
+    actionGrads = clipGrads(actionGrads);
 
     // calculate logits gradients
     let logitsGrads = ModelShellComp.softmaxBackward(actionGrads);
 
-    // apply logits gradients 
-    let newLogits = [];
+    // for better stability, we clip the gradients ...
+    logitsGrads = clipGrads(logitsGrads);
+
+    // apply logits gradients
+    let adaptedLogits = [];
     for (let n = 0; n < logits.length; n++) {
-      newLogits.push(logits[n] + logitsGrads[n]);
+      adaptedLogits.push(logits[n] - logitsGrads[n]);
     }
 
-    if (useNet) {
-      // pure newLogits are returned in case a Net is used, because the network
-      // learning rate replaces the table variant alpha parameter ...
-      return newLogits;
-    }
-
-    let tableLogits = [];
-    for (let n = 0; n < logits.length; n++) {
-      tableLogits.push((1.0 - alpha) * logits[n] + alpha * newLogits[n]);
-    }
-    return tableLogits;
+    // shift logits max to 0 for better stability ...
+    return shiftLogits(adaptedLogits);
   };
 
   let trajectory;
 
   const PolicyGradientModelUpdate = async () => {
-    // calculate accumulated future reward for each trajectory step
     for (let i = trajectory.length - 1; i >= 0; i--) {
+      // calculate accumulated future reward for each trajectory step ...
       if (trajectory[i].done) {
         trajectory[i].g = trajectory[i].r;
       } else {
         trajectory[i].g = trajectory[i].r + gamma * trajectory[i + 1].g;
       }
+
+      // update of the model, using the data calculated above ...
+      let state = trajectory[i].state;
+      let a = trajectory[i].a;
+      let g = trajectory[i].g;
+
+      ModelShellComp.updateModel({ state, a, g }, calcLogits);
     }
 
-    // calculate accumulated reward max and min values
-    let g = trajectory[0].g;
-    let g_max = g;
-    let g_min = g;
-    for (let n = 1; n < trajectory.length; n++) {
-      let g = trajectory[n].g;
-      if (g_max < g) g_max = g;
-      if (g_min > g) g_min = g;
-    }
-
-    // calculate accumulated reward mean and distance
-    let g_mean = (g_max + g_min) / 2.0;
-    let g_dist = (g_max - g_min) / 2.0;
-    if (g_dist < 1e-6) {
-      g_dist = 1e-6;
-    }
-
-    // normalize accumulated reward values and update the policy model
-    for (let n = 0; n < trajectory.length; n++) {
-      let state = trajectory[n].state;
-      let a = trajectory[n].a;
-      let g = (trajectory[n].g - g_mean) / g_dist;
-
-      await ModelShellComp.updateModel({ state, a, g }, calcLogits);
-    }
+    // change to the updated model ...
+    await ModelShellComp.takeModel();
   };
 
   const runEpisodeStep = state => {

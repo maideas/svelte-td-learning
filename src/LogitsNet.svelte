@@ -9,13 +9,11 @@
   export let numY;
   export let numA;
   export let learningRate = 0.002; // usually not needed to be overidden
-  export let trainDistance = 10;
 
   const numStates = numX * numY;
   const maxData = 2000;
   const batchSize = 100;
 
-  let trainDistanceCount = 0;
   let model = undefined;
 
   let DataComp; // represents the experience replay buffer
@@ -146,38 +144,41 @@
   // update
   //====================================================
 
-  export const updateModel = async (stepData, calcLogitsFunc) => {
-    // normalize state value and add it to stepData item ...
-    stepData.normState = normalizeState(stepData.state);
+  export const updateModel = (stepData, calcLogitsFunc) => {
+    // normalize state value ...
+    let normState = normalizeState(stepData.state);
 
-    // add the given data item to the DataComp memory ...
-    DataComp.add(stepData);
+    // get current network output data (logits) for the
+    // given input data (normalized state) ...
+    let logits = predictNormStates([normState])[0];
 
-    // train logits network only every "trainDistance" steps ...
-    trainDistanceCount++;
-    if (trainDistanceCount < trainDistance) return;
-    trainDistanceCount = 0;
+    // get updated logits values ...
+    logits = calcLogitsFunc(logits, stepData);
 
-    // get a random batch of data from the DataComp memory ...
-    const stepDataBatch = DataComp.getBatch(batchSize);
+    // add the data item to the DataComp memory ...
+    DataComp.add({ normState, logits });
+  };
 
-    // prepare logits network input data (normalized state values) ...
-    let normStates = [];
-    stepDataBatch.forEach(stepData => {
-      normStates.push(stepData.normState);
-    });
+  export const takeModel = async () => {
+    for (let n = 0; n < Math.ceil(DataComp.length() / batchSize); n++) {
+      // get a random batch of data from the DataComp memory ...
+      const stepDataBatch = DataComp.getBatch(batchSize);
 
-    // get current network output data (logits values) for the
-    // given input data (states) ...
-    let logits = predictNormStates(normStates);
+      // prepare logits network train data ...
+      let normStates = [];
+      let logits = [];
+      stepDataBatch.forEach(stepData => {
+        normStates.push(stepData.normState);
+        logits.push(stepData.logits);
+      });
 
-    stepDataBatch.forEach((stepData, i) => {
-      // update the logit values ...
-      logits[i] = calcLogitsFunc(logits[i], stepData);
-    });
+      // use the prepared X and Y data to adjust the logits network ...
+      await fit(normStates, logits);
+    }
 
-    // use the prepared X and Y data to adjust the logits network ...
-    await fit(normStates, logits);
+    // now, we clear the episode data to prevent the usage of outdated
+    // trajectory data at following model fit calls ...
+    DataComp.clear();
 
     // notify the upper components, that the model has changed ...
     dispatch("modelChanged", {});

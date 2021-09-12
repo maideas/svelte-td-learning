@@ -85,7 +85,7 @@ export const comp4 = comp4Element ? new MazeShell({
 		numY: 4,
 		blocked: Array([0, 0], [3, 2], [4, 1], [3, 3]),
 		terminal: Array([1, 1]),
-		rewards: Array([1, 1, 1.0]),
+		rewards: Array([1, 1, 10.0]),
 		defaultReward: -0.1
 	}
 }) : null;
