@@ -31,4 +31,8 @@
   export const clear = () => {
     data = [];
   };
+
+  export const length = () => {
+    return data.length;
+  }
 </script>
