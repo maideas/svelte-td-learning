@@ -138,7 +138,7 @@
     }
   };
 
-  export const getQValues = state => {
+  export const getValues = state => {
     return QModelShellComp.getQValues(state);
   };
 </script>

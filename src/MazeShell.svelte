@@ -56,8 +56,8 @@
     for (let y = 0; y < numY; y++) {
       for (let x = 0; x < numX; x++) {
         let state = [x, y];
-        let QValues = agentComp.getQValues(state);
-        mazeComp.setQValues(state, QValues);
+        let values = agentComp.getValues(state);
+        mazeComp.setValues(state, values);
       }
     }
   };

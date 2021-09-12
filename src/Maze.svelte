@@ -42,8 +42,8 @@
     return mazeTileComps[state[0]][state[1]].isTerminal();
   };
 
-  export const setQValues = (state, QValues) => {
-    mazeTileComps[state[0]][state[1]].setQValues(QValues);
+  export const setValues = (state, values) => {
+    mazeTileComps[state[0]][state[1]].setValues(values);
     updateHeatMap();
   };
 
@@ -57,7 +57,7 @@
 
     for (let y = 0; y < numY; y++) {
       for (let x = 0; x < numX; x++) {
-        let value = mazeTileComps[x][y].getMaxQValue();
+        let value = mazeTileComps[x][y].getMaxValue();
         if (minValue > value) {
           minValue = value;
         }
@@ -70,7 +70,7 @@
 
     for (let y = 0; y < numY; y++) {
       for (let x = 0; x < numX; x++) {
-        let value = mazeTileComps[x][y].getMaxQValue();
+        let value = mazeTileComps[x][y].getMaxValue();
         mazeTileComps[x][y].setHeat((value - minValue) / delta);
       }
     }

@@ -18,7 +18,7 @@
   let blocked = false;
   let terminal = false;
   let reward = 0;
-  let QValues = Array.from({ length: numA }, () => 0);
+  let values = Array.from({ length: numA }, () => 0);
 
   let angle;
   let bg_style = "";
@@ -43,22 +43,22 @@
   export const setReward = r => {
     reward = r;
     if (terminal) {
-      QValues = Array.from({ length: numA }, () => r);
+      values = Array.from({ length: numA }, () => r);
     }
   };
 
-  export const getMaxQValue = () => {
-    return Math.max(...QValues);
+  export const getMaxValue = () => {
+    return Math.max(...values);
   };
 
   const updatePolicy = () => {
-    let policy = QValues.indexOf(getMaxQValue());
+    let policy = values.indexOf(getMaxValue());
     angle = (policy * 90).toFixed();
   };
 
-  export const setQValues = values => {
+  export const setValues = vs => {
     if (!terminal && !blocked) {
-      QValues = values;
+      values = vs;
       updatePolicy();
     }
   };
@@ -134,7 +134,7 @@
 <div class="tile" class:blocked class:terminal style={bg_style}>
   <div />
   <div class="sub-tile sub-tile-top">
-    <span>{QValues[MazeDirEnum.up].toFixed(3)}</span>
+    <span>{values[MazeDirEnum.up].toFixed(3)}</span>
   </div>
   <div class="sub-tile sub-tile-reward" class:reward-is-negative={reward < 0.0}>
     {#if Math.abs(reward) < 10.0}
@@ -145,7 +145,7 @@
   </div>
 
   <div class="sub-tile sub-tile-left">
-    <span>{QValues[MazeDirEnum.left].toFixed(3)}</span>
+    <span>{values[MazeDirEnum.left].toFixed(3)}</span>
   </div>
   <div class="sub-tile sub-tile-middle">
     {#if blocked}
@@ -159,12 +159,12 @@
     {/if}
   </div>
   <div class="sub-tile sub-tile-right">
-    <span>{QValues[MazeDirEnum.right].toFixed(3)}</span>
+    <span>{values[MazeDirEnum.right].toFixed(3)}</span>
   </div>
 
   <div />
   <div class="sub-tile sub-tile-bottom">
-    <span>{QValues[MazeDirEnum.down].toFixed(3)}</span>
+    <span>{values[MazeDirEnum.down].toFixed(3)}</span>
   </div>
   <div />
 </div>

@@ -150,7 +150,7 @@
     }
   };
 
-  export const getQValues = state => {
+  export const getValues = state => {
     return ModelShellComp.getActionProbs(state);
   };
 </script>
