@@ -97,7 +97,6 @@
   .blocked {
     background: #eee;
   }
-  .blocked span,
   .terminal span {
     display: none;
   }
@@ -126,6 +125,9 @@
   }
   .sub-tile-reward span {
     display: inline;
+  }
+  .blocked span {
+    display: none;
   }
 </style>
 
